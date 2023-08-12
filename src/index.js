@@ -1,17 +1,18 @@
-const { Client, Intents } = require('discord.js');
-const dotenv = require('dotenv');
-
-dotenv.config();
+const { Client, IntentsBitField } = require('discord.js');
+require('dotenv').config();
 
 const client = new Client({
-    intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES],
+    intents: [
+        IntentsBitField.Flags.Guilds, 
+        IntentsBitField.Flags.GuildMessages
+    ],
 });
 
 client.once('ready', () => {
-    console.log(`Logged in as ${client.user.tag}`);
+    console.log(`✔️  Logged in as ${client.user.tag}`);
 });
 
-client.on('messageCreate', async (message) => {
+client.on('messageCreate', (message) => {
     // Ignore messages from bots and non-text channels
     if (message.author.bot || !message.content.startsWith('!')) {
         return;
@@ -20,15 +21,17 @@ client.on('messageCreate', async (message) => {
     // Parse command and arguments
     const args = message.content.slice(1).trim().split(/ +/);
     const command = args.shift().toLowerCase();
+    console.log(command)
 
     // Handle commands
-    if (command === 'start') {
+    if (command == 'start') {
         // TODO: Implement Squad Builder Showdown challenge initiation
-    } else if (command === 'guess') {
+        console.log('Started');
+    } else if (command == 'guess') {
         // TODO: Implement player guesses
-    } else if (command === 'reveal') {
+    } else if (command == 'reveal') {
         // TODO: Implement revealing player selections
-    } else if (command === 'stats') {
+    } else if (command == 'stats') {
         // TODO: Implement displaying player statistics
     }
 });
