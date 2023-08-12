@@ -31,21 +31,18 @@ client.on('messageCreate', async (message) => {
     const command = args.shift().toLowerCase();
 
     // Handle commands
-    if (command === 'sbs') {
+    if (command == 'sbs') {
         if (gameStarted) {
             await message.reply('A game is already in progress.');
         } else {
             gameStarted = true;
-            await message.reply('The game has started! Who is Player 1? Mention them with @');
-        }
-    } else if (gameStarted && players.length === 0 && message.mentions.users.size === 1) {
-        players.push(message.mentions.users.first());
-        await message.reply('Player 1 selected! Who is Player 2? Mention them with @');
-    } else if (gameStarted && players.length === 1 && message.mentions.users.size === 1) {
-        players.push(message.mentions.users.first());
-        await message.reply(`Both players selected: ${players[0].tag} and ${players[1].tag}.`);
-        await players[0].send('Welcome to the Squad Builder Showdown game! Please provide your first guess.');
-        await players[1].send('Welcome to the Squad Builder Showdown game! Please provide your first guess.');
+            players.player1 = message.author; // Set the player who used the command as Player 1
+            await message.reply('You are Player 1! Who is Player 2? Mention them with @');        }
+    } else if (gameStarted && !players.player2 && message.mentions.users.size == 1) {
+        players.player2 = message.mentions.users.first(); // Set the mentioned user as Player 2
+        await message.reply(`Both players selected: ${players.player1.tag} and ${players.player2.tag}.`);
+        await players.player1.send('Welcome to the Squad Builder Showdown game! Please provide your formation guess.');
+        await players.player2.send('Welcome to the Squad Builder Showdown game! Please provide your formation guess.');
     }
 });
 
