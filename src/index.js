@@ -16,33 +16,37 @@ client.once('ready', (c) => {
 });
 
 let gameStarted = false;
-let players = [];
+let players = {
+    player1: null,
+    player2: null
+};
 
 client.on('messageCreate', async (message) => {
-
-    // Ignore messages from bots and non-text channels
-    console.log('message: ' + message.content)
-    if (message.author.bot || !message.content.startsWith('!')) {
+    if (message.author.bot) {
         return;
     }
 
-    // Parse command and arguments
-    const args = message.content.slice(1).trim().split(/ +/);
+    const args = message.content.trim(1).split(/ +/);
     const command = args.shift().toLowerCase();
 
-    // Handle commands
     if (command == 'sbs') {
         if (gameStarted) {
             await message.reply('A game is already in progress.');
         } else {
             gameStarted = true;
             players.player1 = message.author; // Set the player who used the command as Player 1
-            await message.reply('You are Player 1! Who is Player 2? Mention them with @');        }
+            await message.reply('You are Player 1! Mention Player 2 with @');
+        }
     } else if (gameStarted && !players.player2 && message.mentions.users.size == 1) {
-        players.player2 = message.mentions.users.first(); // Set the mentioned user as Player 2
-        await message.reply(`Both players selected: ${players.player1.tag} and ${players.player2.tag}.`);
-        await players.player1.send('Welcome to the Squad Builder Showdown game! Please provide your formation guess.');
-        await players.player2.send('Welcome to the Squad Builder Showdown game! Please provide your formation guess.');
+        const mentionedUser = message.mentions.users.first();
+
+        // Check if the mentioned user is not Player 1
+        if (mentionedUser.id == players.player1.id) {
+            players.player2 = mentionedUser; // Set the mentioned user as Player 2
+            await message.reply(`Both players selected: ${players.player1.tag} and ${players.player2.tag}.`);
+            await players.player1.send('Welcome to the Squad Builder Showdown game! Please provide your first guess.');
+            await players.player2.send('Welcome to the Squad Builder Showdown game! Please provide your first guess.');
+        }
     }
 });
 
