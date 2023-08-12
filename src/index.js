@@ -32,8 +32,12 @@ client.on('messageCreate', async (message) => {
 
     // Handle commands
     if (command === 'sbs') {
-        gameStarted = true;
-        await message.reply('The game has started! Who is Player 1? Mention them with @');
+        if (gameStarted) {
+            await message.reply('A game is already in progress.');
+        } else {
+            gameStarted = true;
+            await message.reply('The game has started! Who is Player 1? Mention them with @');
+        }
     } else if (gameStarted && players.length === 0 && message.mentions.users.size === 1) {
         players.push(message.mentions.users.first());
         await message.reply('Player 1 selected! Who is Player 2? Mention them with @');
