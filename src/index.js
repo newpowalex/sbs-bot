@@ -21,6 +21,8 @@ let players = {
     player2: null
 };
 
+let currentRound = 'formation';
+
 let guesses = {
     player1: {
         formation: null,
@@ -38,6 +40,24 @@ let guesses = {
     }
 };
 
+function sendBotMessage(content) {
+    // Implement sending a message from the bot to the channel or player
+    // You can use client.channels.cache.get() to get the channel by ID
+    // or user.send() to send a message to a user's DM
+}
+
+function sendDM(user, content) {
+    // Implement sending a direct message to a user
+    user.send(content);
+}
+
+async function moveToNextRound(round) {
+    currentRound = round;
+    await sendBotMessage(`Next round: ${currentRound}.`);
+    await sendDM(players.player1, `Welcome to round ${currentRound}! Please provide your guess.`);
+    await sendDM(players.player2, `Welcome to round ${currentRound}! Please provide your guess.`);
+}
+
 client.on('messageCreate', async (message) => {
     if (message.author.bot) {
         return;
@@ -47,7 +67,7 @@ client.on('messageCreate', async (message) => {
     const args = message.content.slice(1).trim().split(/ +/);
     const command = args.shift().toLowerCase();
 
-    if (command == 'sbs') {
+    if (command === 'sbs') {
         if (gameStarted) {
             await message.reply('A game is already in progress.');
         } else {
@@ -65,20 +85,20 @@ client.on('messageCreate', async (message) => {
             await players.player1.send('Welcome to the Squad Builder Showdown game! Please provide your formation guess.');
             await players.player2.send('Welcome to the Squad Builder Showdown game! Please provide your formation guess.');
         }
-    // Save formation guess for both players
-    } else if (gameStarted && players.player1 && players.player2 &&
-        message.author.id === players.player1.id && !guesses.player1.formation) {
-        guesses.player1.formation = message.content;
-        await message.reply('Formation guess saved for Player 1.');
-    } else if (gameStarted && players.player1 && players.player2 &&
-        message.author.id === players.player2.id && !guesses.player2.formation) {
-        guesses.player2.formation = message.content;
-        await message.reply('Formation guess saved for Player 2.');
+    } else if (gameStarted && players.player1 && players.player2 && message.author.id === players.player1.id) {
+        handleGuessCommand(players.player1, message.content);
+    } else if (gameStarted && players.player1 && players.player2 && message.author.id === players.player2.id) {
+        handleGuessCommand(players.player2, message.content);
     }
 
-    if (formationGuesses.player1 && formationGuesses.player2) {
-        // Both players have guessed, send a message
-        await message.reply('Both players have guessed. Use commands `!reveal p1` and `!reveal p2` to see their guesses.');
+    if (guesses.player1.formation && guesses.player2.formation) {
+        moveToNextRound('midfielders');
+    } else if (guesses.player1.midfielders && guesses.player2.midfielders) {
+        moveToNextRound('outsideBacks');
+    } else if (guesses.player1.outsideBacks && guesses.player2.outsideBacks) {
+        moveToNextRound('centreBacksGk');
+    } else if (guesses.player1.centreBacksGk && guesses.player2.centreBacksGk) {
+        // All rounds are completed, you can perform final actions here
     }
 });
 
