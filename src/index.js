@@ -28,15 +28,15 @@ let guesses = {
         formation: [],
         attackers: [],
         midfielders: [],
-        outsideBacks: [],
-        centreBacksGk: []
+        outsidebacks: [], 
+        centrebacksgk: []
     },
     player2: {
         formation: [],
         attackers: [],
         midfielders: [],
-        outsideBacks: [],
-        centreBacksGk: []
+        outsidebacks: [],
+        centrebacksgk: []
     }
 };
 
