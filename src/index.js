@@ -21,8 +21,6 @@ let players = {
     player2: null
 };
 
-let currentRound = 'formation';
-
 let guesses = {
     player1: {
         formation: [],
@@ -40,14 +38,45 @@ let guesses = {
     }
 };
 
-async function moveToNextRound(round) {
-    currentRound = round;
-    await message.reply(`Next round: ${currentRound}.`);
-    await players.player1.send(`Welcome to round ${currentRound}! Please provide your guess.`);
-    await players.player2.send(`Welcome to round ${currentRound}! Please provide your guess.`);
+function nextRoundType(currentRound) {
+    // Determine the next round based on the current round
+    // You can customize this logic based on your game's rules
+    switch (currentRound.toLowerCase()) {
+        case 'formation':
+            return 'attackers';
+        case 'attackers':
+            return 'midfielders';
+        case 'midfielders':
+            return 'outsidebacks';
+        case 'outsidebacks':
+            return 'centrebacksgk';
+        case 'centrebacksgk':
+            return null; // No more rounds
+        default:
+            return null;
+    }
 }
 
-async function handleGuess(player, content, currentRound) {
+function moveToNextRound(message) {
+    const nextRound = nextRoundType(currentRound);
+    if (nextRound) {
+        currentRound = nextRound;
+        message.reply(`Next round: ${nextRound}.`);
+    } else {
+        // Handle end of game or other logic
+    }
+}
+
+async function sendDM(player, content) {
+    try {
+        const dmChannel = await player.createDM();
+        await dmChannel.send(content);
+    } catch (error) {
+        console.error(`Error sending DM to ${player.tag}:`, error);
+    }
+}
+
+async function handleGuessCommand(player, content, currentRound, message) {
     const guessKey = currentRound.toLowerCase();
 
     if (content.toLowerCase() === 'done') {
@@ -57,12 +86,8 @@ async function handleGuess(player, content, currentRound) {
         }
 
         await sendDM(player, `Guesses for ${currentRound} saved. You can now reveal your guesses with "!reveal ${player.tag}"`);
+        moveToNextRound(message); // Move to the next round
 
-        // Determine the next round
-        const nextRound = nextRoundType(currentRound);
-        if (nextRound) {
-            moveToNextRound(nextRound);
-        }
     } else {
         // Save the guess for the current round
         if (!guesses[player.tag][guessKey]) {
@@ -78,42 +103,48 @@ client.on('messageCreate', async (message) => {
         return;
     }
 
-    // Handle message for bot read
     const args = message.content.slice(1).trim().split(/ +/);
     const command = args.shift().toLowerCase();
 
-    if (command === 'sbs') {
-        if (gameStarted) {
-            await message.reply('A game is already in progress.');
-        } else {
-            gameStarted = true;
-            players.player1 = message.author; // Set the player who used the command as Player 1
-            await message.reply('You are Player 1! Mention Player 2 with @');
-        }
-    } else if (gameStarted && !players.player2 && message.mentions.users.size === 1) {
-        const mentionedUser = message.mentions.users.first();
-
-        // Check if the mentioned user is not Player 1
-        if (mentionedUser.id == players.player1.id) {
-            players.player2 = mentionedUser; // Set the mentioned user as Player 2
-            await message.reply(`Both players selected: ${players.player1.tag} and ${players.player2.tag}.`);
-            await players.player1.send('Welcome to the Squad Builder Showdown game! Please provide your formation guess.');
-            await players.player2.send('Welcome to the Squad Builder Showdown game! Please provide your formation guess.');
-        }
-    } else if (gameStarted && players.player1 && players.player2 && message.author.id === players.player1.id) {
-        handleGuess(players.player1, message.content, currentRound);
-    } else if (gameStarted && players.player1 && players.player2 && message.author.id === players.player2.id) {
-        handleGuess(players.player2, message.content, currentRound);
-    }
-
-    if (guesses.player1.formation && guesses.player2.formation) {
-        moveToNextRound('midfielders');
-    } else if (guesses.player1.midfielders && guesses.player2.midfielders) {
-        moveToNextRound('outsideBacks');
-    } else if (guesses.player1.outsideBacks && guesses.player2.outsideBacks) {
-        moveToNextRound('centreBacksGk');
-    } else if (guesses.player1.centreBacksGk && guesses.player2.centreBacksGk) {
-        // All rounds are completed, you can perform final actions here
+    switch (command) {
+        case 'sbs':
+            if (gameStarted) {
+                await message.reply('A game is already in progress.');
+            } else {
+                gameStarted = true;
+                players.player1 = message.author;
+                await message.reply('You are Player 1! Mention Player 2 with @');
+            }
+            break;
+        case 'reveal':
+            if (players.player1 && players.player2 && message.mentions.users.size === 1) {
+                const mentionedUser = message.mentions.users.first();
+                if (mentionedUser.id === players.player1.id) {
+                    const playerGuesses = guesses.player1[currentRound.toLowerCase()];
+                    if (playerGuesses && playerGuesses.length > 0) {
+                        await sendDM(mentionedUser, `Your ${currentRound} guess: ${playerGuesses.join(', ')}`);
+                    } else {
+                        await sendDM(mentionedUser, `You haven't provided any ${currentRound} guesses yet.`);
+                    }
+                } else if (mentionedUser.id === players.player2.id) {
+                    const playerGuesses = guesses.player2[currentRound.toLowerCase()];
+                    if (playerGuesses && playerGuesses.length > 0) {
+                        await sendDM(mentionedUser, `Your ${currentRound} guess: ${playerGuesses.join(', ')}`);
+                    } else {
+                        await sendDM(mentionedUser, `You haven't provided any ${currentRound} guesses yet.`);
+                    }
+                }
+            }
+            break;
+        default:
+            if (gameStarted && players.player1 && players.player2) {
+                if (message.author.id === players.player1.id) {
+                    handleGuessCommand(players.player1, message.content, currentRound, message);
+                } else if (message.author.id === players.player2.id) {
+                    handleGuessCommand(players.player2, message.content, currentRound, message);
+                }
+            }
+            break;
     }
 });
 
