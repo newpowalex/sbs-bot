@@ -25,18 +25,18 @@ let currentRound = 'formation';
 
 let guesses = {
     player1: {
-        formation: null,
-        attackers: null,
-        midfielders: null,
-        outsideBacks: null,
-        centreBacksGk: null
+        formation: [],
+        attackers: [],
+        midfielders: [],
+        outsideBacks: [],
+        centreBacksGk: []
     },
     player2: {
-        formation: null,
-        attackers: null,
-        midfielders: null,
-        outsideBacks: null,
-        centreBacksGk: null
+        formation: [],
+        attackers: [],
+        midfielders: [],
+        outsideBacks: [],
+        centreBacksGk: []
     }
 };
 
