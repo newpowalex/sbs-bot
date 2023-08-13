@@ -47,6 +47,32 @@ async function moveToNextRound(round) {
     await players.player2.send(`Welcome to round ${currentRound}! Please provide your guess.`);
 }
 
+async function handleGuess(player, content, currentRound) {
+    const guessKey = currentRound.toLowerCase();
+
+    if (content.toLowerCase() === 'done') {
+        if (!guesses[player.tag][guessKey]) {
+            await sendDM(player, `You haven't provided any guesses for ${currentRound} yet. Please provide your guess or type "done".`);
+            return;
+        }
+
+        await sendDM(player, `Guesses for ${currentRound} saved. You can now reveal your guesses with "!reveal ${player.tag}"`);
+
+        // Determine the next round
+        const nextRound = nextRoundType(currentRound);
+        if (nextRound) {
+            moveToNextRound(nextRound);
+        }
+    } else {
+        // Save the guess for the current round
+        if (!guesses[player.tag][guessKey]) {
+            guesses[player.tag][guessKey] = [];
+        }
+        guesses[player.tag][guessKey].push(content);
+        await sendDM(player, `Guess for ${currentRound} saved. Please provide your next guess or type "done" to finish.`);
+    }
+}
+
 client.on('messageCreate', async (message) => {
     if (message.author.bot) {
         return;
@@ -75,9 +101,9 @@ client.on('messageCreate', async (message) => {
             await players.player2.send('Welcome to the Squad Builder Showdown game! Please provide your formation guess.');
         }
     } else if (gameStarted && players.player1 && players.player2 && message.author.id === players.player1.id) {
-        handleGuessCommand(players.player1, message.content);
+        handleGuess(players.player1, message.content, currentRound);
     } else if (gameStarted && players.player1 && players.player2 && message.author.id === players.player2.id) {
-        handleGuessCommand(players.player2, message.content);
+        handleGuess(players.player2, message.content, currentRound);
     }
 
     if (guesses.player1.formation && guesses.player2.formation) {
