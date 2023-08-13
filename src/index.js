@@ -40,22 +40,11 @@ let guesses = {
     }
 };
 
-function sendBotMessage(content) {
-    // Implement sending a message from the bot to the channel or player
-    // You can use client.channels.cache.get() to get the channel by ID
-    // or user.send() to send a message to a user's DM
-}
-
-function sendDM(user, content) {
-    // Implement sending a direct message to a user
-    user.send(content);
-}
-
 async function moveToNextRound(round) {
     currentRound = round;
-    await sendBotMessage(`Next round: ${currentRound}.`);
-    await sendDM(players.player1, `Welcome to round ${currentRound}! Please provide your guess.`);
-    await sendDM(players.player2, `Welcome to round ${currentRound}! Please provide your guess.`);
+    await message.reply(`Next round: ${currentRound}.`);
+    await players.player1.send(`Welcome to round ${currentRound}! Please provide your guess.`);
+    await players.player2.send(`Welcome to round ${currentRound}! Please provide your guess.`);
 }
 
 client.on('messageCreate', async (message) => {
