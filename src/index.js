@@ -1,6 +1,15 @@
 require('dotenv').config();
-const { Client, MessageEmbed } = require('discord.js');
-const client = new Client();
+const { Client, IntentsBitField, MessageEmbed, EmbedBuilder } = require('discord.js');
+const client = new Client({
+    intents: [
+        IntentsBitField.Flags.Guilds,
+        IntentsBitField.Flags.GuildMessages,
+        IntentsBitField.Flags.GuildMembers,
+        IntentsBitField.Flags.DirectMessages,
+        IntentsBitField.Flags.MessageContent,
+        IntentsBitField.Flags.GuildMessageReactions
+    ]
+});
 
 const players = {};
 
@@ -16,9 +25,9 @@ client.on('messageCreate', async (message) => {
         players.player1 = message.author;
 
         // Send an embedded message in the chat
-        const embed = new MessageEmbed()
+        const embed = new EmbedBuilder()
             .setTitle('Squad Builder Showdown')
-            .setDescription('Welcome to the game! React with ✅ to start.')
+            .setDescription('The game is ready! React with ✅ to become Player 2.')
             .setColor('#0099ff');
 
         const sentMessage = await message.channel.send({ embeds: [embed] });
@@ -27,16 +36,20 @@ client.on('messageCreate', async (message) => {
 });
 
 client.on('messageReactionAdd', async (reaction, user) => {
-    if (reaction.emoji.name === '✅' && user.bot === false && players.player1 === user) {
-        // Handle the game logic here based on the reaction
-        // Update the embedded message as needed
-        // Implement the game flow using reactions
+    if (reaction.emoji.name === '✅' && user.bot === false && players.player1 !== user && !players.player2) {
+        // Set the first person who reacts as Player 2
+        players.player2 = user;
 
-        // After handling, send DM to Player 2
-        if (!players.player2) {
-            players.player2 = user;
-            await user.send('You are Player 2! Please provide your guess for the current round through DM.');
-        }
+        // Remove reactions from the message
+        reaction.message.reactions.removeAll();
+
+        // Edit the embedded message to display the selected players
+        const embed = new EmbedBuilder()
+            .setTitle('Squad Builder Showdown')
+            .setDescription(`Player 1: ${players.player1.tag}\n Player 2: ${players.player2.tag}`)
+            .setColor('#0099ff');
+
+        reaction.message.edit({ embeds: [embed] });
     }
 });
 
