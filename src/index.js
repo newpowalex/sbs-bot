@@ -46,7 +46,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
         // Edit the embedded message to display the selected players
         const embed = new EmbedBuilder()
             .setTitle('Squad Builder Showdown')
-            .setDescription(`Player 1: ${players.player1.tag}\n Player 2: ${players.player2.tag}`)
+            .setDescription(`Player 1: ${players.player1.tag}\n Player 2: ${players.player2.tag}\n\n DM Showdown with your guesses!`)
             .setColor('#0099ff');
 
         reaction.message.edit({ embeds: [embed] });
