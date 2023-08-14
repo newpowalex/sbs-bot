@@ -5,7 +5,7 @@ const client = new Client();
 const players = {};
 
 client.on('messageCreate', async (message) => {
-    if (message.content === '!start') {
+    if (message.content === '!sbs') {
         // Check if the game is already in progress
         if (players.player1 || players.player2) {
             await message.reply('A game is already in progress.');
