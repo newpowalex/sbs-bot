@@ -13,8 +13,8 @@ const client = new Client({
 
 let players = {
     player1: {
+        user: undefined,
         locked: undefined,
-        revealed: undefined,
         formation: [],
         attackers: [],
         midfielders: [],
@@ -22,8 +22,8 @@ let players = {
         centrebacksgk: []
     },
     player2: {
+        user: undefined,
         locked: undefined,
-        revealed: undefined,
         formation: [],
         attackers: [],
         midfielders: [],
@@ -38,27 +38,45 @@ async function startRound(players) {
     for (const player of Object.values(players)) {
         const embed = new EmbedBuilder()
             .setTitle('Squad Builder Showdown')
-            .setDescription(`Welcome to round ${currentRound}, ${player.tag}! Please provide your guess.`)
+            .setDescription(`Welcome to round ${currentRound}, ${player.user.tag}! Please provide your guess.`)
             .setColor('#0099ff');
 
-        const dmChannel = await player.createDM();
+        const dmChannel = await player.user.createDM();
         await dmChannel.send({ embeds: [embed] });
+    }
+}
+
+async function determineP1(players, user) {
+    const isPlayer1 = (user.id === players.player1.user.id);
+    console.log(`isPlayer1: ${isPlayer1}`);
+    const isPlayer2 = (user.id === players.player2.user.id);
+    console.log(`isPlayer2: ${isPlayer2}`);
+
+
+    if (isPlayer1 === true) {
+        console.log(`P1: ${players.player1}`)
+        return true;
+    } else if (isPlayer2 === true) {
+        console.log(`P2: ${players.player2}`)
+        return false;
+    } else {
+        console.log('Error: Not P1 or P2');
+        return 'error';
     }
 }
 
 client.on('messageCreate', async (message) => {
     if (message.content === '!sbs') {
         // Check if the game is already in progress
-        if (players.player1.tag || players.player2.tag) {
+        if (players.player1.user || players.player2.user) {
             await message.reply('A game is already in progress.');
+            console.log(players.player1, players.player2);
             return;
         }
 
         // Set the first player as Player 1
-        players.player1 = message.author;
-        console.log(players.player1.tag)
-        console.log(players.player2.tag)
-
+        players.player1.user = message.author;
+        console.log(`Player tag and id: ${players.player1.user.tag}, ${players.player1.user.id}`)
 
         // Send an embedded message in the chat
         const embed = new EmbedBuilder()
@@ -72,10 +90,10 @@ client.on('messageCreate', async (message) => {
 });
 
 client.on('messageReactionAdd', async (reaction, user) => {
-    if (reaction.emoji.name === '✅' && user.bot === false && players.player1 !== user && !players.player2.tag) {
+    if (reaction.emoji.name === '✅' && user.bot === false && players.player1.user !== user && !players.player2.user) {
         // Set the first person who reacts as Player 2
-        players.player2 = user;
-        console.log(players.player2.tag)
+        players.player2.user = user;
+        console.log(`Player tag and id: ${players.player2.user.tag}, ${players.player2.user.id}`)
 
         // Remove reactions from the message
         reaction.message.reactions.removeAll();
@@ -83,22 +101,33 @@ client.on('messageReactionAdd', async (reaction, user) => {
         // Edit the embedded message to display the selected players
         const embed = new EmbedBuilder()
             .setTitle('Squad Builder Showdown')
-            .setDescription(`Player 1: ${players.player1.tag}\n Player 2: ${players.player2.tag}\n\n DM Showdown with your guesses!`)
+            .setDescription(`Player 1: ${players.player1.user.tag}\n Player 2: ${players.player2.tag}\n\n DM Showdown with your guesses!`)
             .setColor('#0099ff');
 
         reaction.message.edit({ embeds: [embed] });
-        
+
 
         // Start the first round by sending DMs to players
         startRound(players);
         await reaction.message.react('🔒');
+        console.log(`Player1 locked: ${players.player1.locked}`);
+        console.log(`Player2 locked: ${players.player2.locked}`);
     }
 
-    if (reaction.emoji.name === '🔒' && user.bot === false && (players.player1 === user || players.player2 === user)) {
-        console.log(`Someone locked: ${user.tag}  | Locked?: ${user.locked}`)
-        if (typeof user.locked === 'undefined') {
-            user.locked = true;
-            console.log(user.tag, 'locked')
+    if (reaction.emoji.name === '🔒' && user.bot === false && (players.player1.user === user || players.player2.user === user)) {
+        const player = undefined;
+        const isP1 = determineP1(players, user);
+        if (isP1 === true) {
+            player = players.player1;
+        } else if (isP1 === false) {
+            player = players.player2;
+        } else {
+            return;
+        }
+
+        if (typeof player.locked === 'undefined') {
+            player.locked = true;
+            console.log(`${player.user.tag}, Locked? = ${player.locked} `)
         }
 
         if (players.player1.locked === true && players.player2.locked === true) {
@@ -118,15 +147,46 @@ client.on('messageReactionAdd', async (reaction, user) => {
 });
 
 client.on('messageCreate', async (message) => {
-    if (message.channel.type === 'DM' && (message.author === players.player1 || message.author === players.player2)) {
-        // Handle guesses and game logic for DM messages here
+    if (!message.guild && (message.author === players.player1.user || message.author === players.player2.user)) {
+        const guessKey = currentRound.toLowerCase();
         const content = message.content;
 
-        // You can also send a reply to the player through DMs
-        // await message.author.send('Your guess has been received.');
+        const player = undefined;
+        const isP1 = determineP1(players, message.author);
+        if (isP1 === true) {
+            player = players.player1;
+        } else if (isP1 === false) {
+            player = players.player2;
+        } else {
+            return;
+        }
+        console.log(`Determined player: ${player.user}`);
 
-        // Example: Log the guesses for demonstration
-        console.log(`${message.author.tag} guessed: ${message.content}`);
+        // Check if it's the formation round
+        if (currentRound === 'formation') {
+            // Formation round: Check if the content is valid (numbers separated by '-')
+            const isValidFormation = /^[0-9]+(-[0-9]+| [0-9]+)*$/.test(content);
+            if (!isValidFormation) {
+                user.send('Invalid guess format. Please provide numbers separated by "-".');
+                return;
+            }
+        } else {
+            // Other rounds: Check if the content is valid (player names separated by ',')
+            const isValidGuess = /^[A-Za-z0-9\s]+(,[A-Za-z0-9\s]+)*$/.test(content);
+            if (!isValidGuess) {
+                user.send('Invalid guess format. Please provide player names separated by ",".');
+                return;
+            }
+        }
+
+        // Save the guess only if the player is locked
+        if (typeof player.locked === true) {
+            if (!guesses[player.user.tag][guessKey]) {
+                guesses[player.user.tag][guessKey] = [];
+            }
+            guesses[player.user.tag][guessKey].push(content);
+            user.send(`Guess for ${currentRound} saved. Please provide your next guess or type "done" to finish.`);
+        }
     }
 });
 
