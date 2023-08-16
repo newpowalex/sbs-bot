@@ -15,6 +15,7 @@ let players = {
     player1: {
         user: undefined,
         locked: false,
+        temp: [],
         formation: [],
         attackers: [],
         midfielders: [],
@@ -24,6 +25,7 @@ let players = {
     player2: {
         user: undefined,
         locked: false,
+        temp: [],
         formation: [],
         attackers: [],
         midfielders: [],
@@ -48,17 +50,14 @@ async function startRound(players) {
 
 function determinePlayer(players, user) {
     const isPlayer1 = (user.id === players.player1.user.id);
-    //console.log(`isPlayer1: ${isPlayer1}`);
     const isPlayer2 = (user.id === players.player2.user.id);
-    //console.log(`isPlayer2: ${isPlayer2}`);
-
 
     if (isPlayer1 === true) {
-        console.log(`P1: ${players.player1}`)
         return players.player1;
+
     } else if (isPlayer2 === true) {
-       console.log(`P2: ${players.player2}`)
         return players.player2;
+
     } else {
         console.log('Error: Not P1 or P2');
         return 'error';
@@ -70,7 +69,6 @@ client.on('messageCreate', async (message) => {
         // Check if the game is already in progress
         if (players.player1.user || players.player2.user) {
             await message.reply('A game is already in progress.');
-            console.log(players.player1, players.player2);
             return;
         }
 
@@ -110,8 +108,6 @@ client.on('messageReactionAdd', async (reaction, user) => {
         // Start the first round by sending DMs to players
         startRound(players);
         await reaction.message.react('🔒');
-        console.log(`Player1 locked: ${players.player1.locked}`);
-        console.log(`Player2 locked: ${players.player2.locked}`);
     }
 
     if (reaction.emoji.name === '🔒' && user.bot === false && (players.player1.user === user || players.player2.user === user)) {
@@ -119,10 +115,12 @@ client.on('messageReactionAdd', async (reaction, user) => {
         // console.log(`Determined player: ${player.user}`);
         console.log('Someone reacted with a lock');
         console.log(`${player.user.tag}, Locked? = ${player.locked} `);
-        
+
         if (player.locked === false) {
             player.locked = true;
-            console.log(`${player.user.tag}, Locked? = ${player.locked} `);
+            console.log(`Locking in: ${player.user.tag}, Locked? = ${player.locked} `);
+            player[currentRound] = player.temp;
+            player.user.send(`Guess of ${player[currentRound]} for ${currentRound} saved.`);
         }
 
         if (players.player1.locked === true && players.player2.locked === true) {
@@ -166,14 +164,11 @@ client.on('messageCreate', async (message) => {
             }
         }
 
-        // Save the guess only if the player is locked
-        if (player.locked === true) {
-            if (!player[currentRound]) {
-                player[currentRound] = [];
-            }
-            player[currentRound].push(content);
-            player.user.send(`Guess of ${player[currentRound]} for ${currentRound} saved.`);
-        }
+        // Save the guess to temp
+        console.log(`Temp: ${player.temp}`);
+        player.temp = [];
+        player.temp.push(content);
+        console.log(`Guess: ${player.temp}`);
     }
 });
 
