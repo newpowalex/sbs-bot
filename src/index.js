@@ -116,11 +116,13 @@ client.on('messageReactionAdd', async (reaction, user) => {
 
     if (reaction.emoji.name === '🔒' && user.bot === false && (players.player1.user === user || players.player2.user === user)) {
         const player = determinePlayer(players, user);
-        console.log(`Determined player: ${player.user}`);
+        // console.log(`Determined player: ${player.user}`);
+        console.log('Someone reacted with a lock');
+        console.log(`${player.user.tag}, Locked? = ${player.locked} `);
         
-        if (player.locked === 'false') {
+        if (player.locked === false) {
             player.locked = true;
-            console.log(`${player.user.tag}, Locked? = ${player.locked} `)
+            console.log(`${player.user.tag}, Locked? = ${player.locked} `);
         }
 
         if (players.player1.locked === true && players.player2.locked === true) {
@@ -142,24 +144,24 @@ client.on('messageReactionAdd', async (reaction, user) => {
 client.on('messageCreate', async (message) => {
     if (!message.guild && (message.author === players.player1.user || message.author === players.player2.user)) {
         const content = message.content;
-        console.log(`Content: ${message.content}`);
+        // console.log(`Content: ${message.content}`);
 
         const player = determinePlayer(players, message.author);
-        console.log(`Determined player: ${player.user}`);
+        // console.log(`Determined player: ${player.user}`);
 
         // Check if it's the formation round
         if (currentRound === 'formation') {
             // Formation round: Check if the content is valid (numbers separated by '-')
             const isValidFormation = /^[0-9]+(-[0-9]+| [0-9]+)*$/.test(content);
             if (!isValidFormation) {
-                user.send('Invalid guess format. Please provide numbers separated by "-".');
+                player.user.send('Invalid guess format. Please provide numbers separated by "-".');
                 return;
             }
         } else {
-            // Other rounds: Check if the content is valid (player names separated by ',')
+            // Other rounds: Check if the content is valid player names separated by ',')
             const isValidGuess = /^[A-Za-z0-9\s]+(,[A-Za-z0-9\s]+)*$/.test(content);
             if (!isValidGuess) {
-                user.send('Invalid guess format. Please provide player names separated by ",".');
+                player.user.send('Invalid guess format. Please provide player names separated by ",".');
                 return;
             }
         }
@@ -170,7 +172,7 @@ client.on('messageCreate', async (message) => {
                 player[currentRound] = [];
             }
             player[currentRound].push(content);
-            user.send(`Guess for ${currentRound} saved.`);
+            player.user.send(`Guess of ${player[currentRound]} for ${currentRound} saved.`);
         }
     }
 });
