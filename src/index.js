@@ -14,7 +14,7 @@ const client = new Client({
 let players = {
     player1: {
         user: undefined,
-        locked: undefined,
+        locked: false,
         formation: [],
         attackers: [],
         midfielders: [],
@@ -23,7 +23,7 @@ let players = {
     },
     player2: {
         user: undefined,
-        locked: undefined,
+        locked: false,
         formation: [],
         attackers: [],
         midfielders: [],
@@ -46,19 +46,19 @@ async function startRound(players) {
     }
 }
 
-async function determineP1(players, user) {
+function determinePlayer(players, user) {
     const isPlayer1 = (user.id === players.player1.user.id);
-    console.log(`isPlayer1: ${isPlayer1}`);
+    //console.log(`isPlayer1: ${isPlayer1}`);
     const isPlayer2 = (user.id === players.player2.user.id);
-    console.log(`isPlayer2: ${isPlayer2}`);
+    //console.log(`isPlayer2: ${isPlayer2}`);
 
 
     if (isPlayer1 === true) {
         console.log(`P1: ${players.player1}`)
-        return true;
+        return players.player1;
     } else if (isPlayer2 === true) {
-        console.log(`P2: ${players.player2}`)
-        return false;
+       console.log(`P2: ${players.player2}`)
+        return players.player2;
     } else {
         console.log('Error: Not P1 or P2');
         return 'error';
@@ -115,17 +115,10 @@ client.on('messageReactionAdd', async (reaction, user) => {
     }
 
     if (reaction.emoji.name === '🔒' && user.bot === false && (players.player1.user === user || players.player2.user === user)) {
-        const player = undefined;
-        const isP1 = determineP1(players, user);
-        if (isP1 === true) {
-            player = players.player1;
-        } else if (isP1 === false) {
-            player = players.player2;
-        } else {
-            return;
-        }
-
-        if (typeof player.locked === 'undefined') {
+        const player = determinePlayer(players, user);
+        console.log(`Determined player: ${player.user}`);
+        
+        if (player.locked === 'false') {
             player.locked = true;
             console.log(`${player.user.tag}, Locked? = ${player.locked} `)
         }
@@ -148,18 +141,10 @@ client.on('messageReactionAdd', async (reaction, user) => {
 
 client.on('messageCreate', async (message) => {
     if (!message.guild && (message.author === players.player1.user || message.author === players.player2.user)) {
-        const guessKey = currentRound.toLowerCase();
         const content = message.content;
+        console.log(`Content: ${message.content}`);
 
-        const player = undefined;
-        const isP1 = determineP1(players, message.author);
-        if (isP1 === true) {
-            player = players.player1;
-        } else if (isP1 === false) {
-            player = players.player2;
-        } else {
-            return;
-        }
+        const player = determinePlayer(players, message.author);
         console.log(`Determined player: ${player.user}`);
 
         // Check if it's the formation round
@@ -180,12 +165,12 @@ client.on('messageCreate', async (message) => {
         }
 
         // Save the guess only if the player is locked
-        if (typeof player.locked === true) {
-            if (!guesses[player.user.tag][guessKey]) {
-                guesses[player.user.tag][guessKey] = [];
+        if (player.locked === true) {
+            if (!player[currentRound]) {
+                player[currentRound] = [];
             }
-            guesses[player.user.tag][guessKey].push(content);
-            user.send(`Guess for ${currentRound} saved. Please provide your next guess or type "done" to finish.`);
+            player[currentRound].push(content);
+            user.send(`Guess for ${currentRound} saved.`);
         }
     }
 });
