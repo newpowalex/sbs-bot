@@ -37,6 +37,12 @@ let players = {
 };
 let currentRound = 'formation';
 
+// Define an array of round names
+const roundNames = ['formation', 'attackers', 'midfielders', 'outsidebacks', 'centrebacksgk'];
+
+// Initialize the current round index
+let currentRoundIndex = 0;
+
 async function startRound(players) {
     // Send DMs to both players with welcome message and current round info
     for (const player of Object.values(players)) {
@@ -47,6 +53,24 @@ async function startRound(players) {
 
         const dmChannel = await player.user.createDM();
         await dmChannel.send({ embeds: [embed] });
+    }
+}
+
+async function nextRound(players) {
+    currentRoundIndex++;
+    for (const player of Object.values(players)) {
+        player.locked = false;
+        player.revealed = false;
+        player.temp = [];
+    }
+
+    if (currentRoundIndex >= roundNames.length) {
+        // All rounds are done
+        console.log('Game is over');
+
+    } else {
+        currentRound = roundNames[currentRoundIndex];
+        console.log(`Moving to next round: ${currentRound}`);
     }
 }
 
@@ -90,6 +114,8 @@ client.on('messageCreate', async (message) => {
 });
 
 client.on('messageReactionAdd', async (reaction, user) => {
+    let p1Guess = {};
+    let p2Guess = {};
     if (reaction.emoji.name === '✅' && user.bot === false && players.player1.user !== user && !players.player2.user) {
         // Set the first person who reacts as Player 2
         players.player2.user = user;
@@ -148,7 +174,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
 
         // Find the '1️⃣' and remove all reactions from the embed
         const emoji = '1️⃣';
-        const p1Guess = await reaction.message.channel.send({ embeds: [embed] });
+        p1Guess = await reaction.message.channel.send({ embeds: [embed] });
         const reaction1 = reaction.message.reactions.cache.get(emoji);
         await reaction1.remove();
         players.player1.revealed = true;
@@ -162,7 +188,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
 
         // Find the '2️⃣' and remove all reactions from the embed
         const emoji = '2️⃣';
-        const p2Guess = await reaction.message.channel.send({ embeds: [embed] });
+        p2Guess = await reaction.message.channel.send({ embeds: [embed] });
         const reaction2 = reaction.message.reactions.cache.get(emoji);
         await reaction2.remove();
         players.player2.revealed = true;
@@ -176,6 +202,15 @@ client.on('messageReactionAdd', async (reaction, user) => {
 
         reaction.message.edit({ embeds: [embed] });
         await reaction.message.react('🟢');
+    }
+
+    // Change to next round
+    if (reaction.emoji.name === '🟢' && user.bot === false && (players.player1.user === user || players.player2.user === user)) {
+        await p1Guess.delete();
+        await p2Guess.delete();
+
+        await nextRound(players);
+        await startRound(players);
     }
 });
 
