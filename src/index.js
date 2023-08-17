@@ -15,6 +15,7 @@ let players = {
     player1: {
         user: undefined,
         locked: false,
+        revealed: false,
         temp: [],
         formation: [],
         attackers: [],
@@ -25,6 +26,7 @@ let players = {
     player2: {
         user: undefined,
         locked: false,
+        revealed: false,
         temp: [],
         formation: [],
         attackers: [],
@@ -99,7 +101,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
         // Edit the embedded message to display the selected players
         const embed = new EmbedBuilder()
             .setTitle('Squad Builder Showdown')
-            .setDescription(`Player 1: ${players.player1.user.tag}\n Player 2: ${players.player2.tag}\n\n DM Showdown with your guesses!`)
+            .setDescription(`Player 1: ${players.player1.user.tag}\n Player 2: ${players.player2.user.tag}\n\n DM Showdown with your guesses!`)
             .setColor('#0099ff');
 
         reaction.message.edit({ embeds: [embed] });
@@ -118,7 +120,6 @@ client.on('messageReactionAdd', async (reaction, user) => {
 
         if (player.locked === false) {
             player.locked = true;
-            console.log(`Locking in: ${player.user.tag}, Locked? = ${player.locked} `);
             player[currentRound] = player.temp;
             player.user.send(`Guess of ${player[currentRound]} for ${currentRound} saved.`);
         }
@@ -127,15 +128,54 @@ client.on('messageReactionAdd', async (reaction, user) => {
             // Remove reactions from the message
             reaction.message.reactions.removeAll();
 
-            const embed1 = new EmbedBuilder()
+            const embed = new EmbedBuilder()
                 .setTitle('Squad Builder Showdown')
-                .setDescription(`Both players locked in!\n\n React with 1️⃣ to reveal ${players.player1.tag}\n\n React with 2️⃣ to reveal ${players.player2.tag}`)
+                .setDescription(`Both players locked in!\n\n React with 1️⃣ to reveal ${players.player1.user.tag}\n\n React with 2️⃣ to reveal ${players.player2.user.tag}`)
                 .setColor('#0099ff');
 
-            reaction.message.edit({ embeds: [embed1] });
+            reaction.message.edit({ embeds: [embed] });
             await reaction.message.react('1️⃣');
             await reaction.message.react('2️⃣');
         }
+    }
+
+    // Reveal Player 1's guess
+    if (reaction.emoji.name === '1️⃣' && user.bot === false && (players.player1.user === user || players.player2.user === user)) {
+        const embed = new EmbedBuilder()
+            .setTitle(`${players.player1.user.tag}'s Guess`)
+            .setDescription(`${players.player1[currentRound]}`)
+            .setColor('#0099ff');
+
+        // Find the '1️⃣' and remove all reactions from the embed
+        const emoji = '1️⃣';
+        const p1Guess = await reaction.message.channel.send({ embeds: [embed] });
+        const reaction1 = reaction.message.reactions.cache.get(emoji);
+        await reaction1.remove();
+        players.player1.revealed = true;
+
+        // Reveal Player 2's guess
+    } else if (reaction.emoji.name === '2️⃣' && user.bot === false && (players.player1.user === user || players.player2.user === user)) {
+        const embed = new EmbedBuilder()
+            .setTitle(`${players.player2.user.tag}'s Guess`)
+            .setDescription(`${players.player2[currentRound]}`)
+            .setColor('#0099ff');
+
+        // Find the '2️⃣' and remove all reactions from the embed
+        const emoji = '2️⃣';
+        const p2Guess = await reaction.message.channel.send({ embeds: [embed] });
+        const reaction2 = reaction.message.reactions.cache.get(emoji);
+        await reaction2.remove();
+        players.player2.revealed = true;
+    }
+
+    if (players.player1.revealed === true && players.player2.revealed === true) {
+        const embed = new EmbedBuilder()
+            .setTitle('Squad Builder Showdown')
+            .setDescription(`Both players revealed!\n\n React with 🟢 to move onto next round.`)
+            .setColor('#0099ff');
+
+        reaction.message.edit({ embeds: [embed] });
+        await reaction.message.react('🟢');
     }
 });
 
