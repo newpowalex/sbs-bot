@@ -2,6 +2,8 @@
 
 The **Squad Builder Showdown Bot** is a Discord bot that facilitates a game where players guess the starting lineup of an oppents EA Sports FC team in various rounds.
 
+**Please Note:** This bot is currently in active development and is not ready to be invited to servers yet. The codebase is a work in progress and may not include all the features or be fully polished.
+
 ## Features
 
 - Select two players to participate in a Squad Builder Showdown game.
