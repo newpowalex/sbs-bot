@@ -17,6 +17,7 @@ let players = {
         locked: false,
         revealed: false,
         temp: [],
+        guessMsg: undefined,
         formation: [],
         attackers: [],
         midfielders: [],
@@ -28,6 +29,7 @@ let players = {
         locked: false,
         revealed: false,
         temp: [],
+        guessMsg: undefined,
         formation: [],
         attackers: [],
         midfielders: [],
@@ -35,10 +37,10 @@ let players = {
         centrebacksgk: []
     }
 };
-let currentRound = 'formation';
+let currentRound = 'Formation';
 
 // Define an array of round names
-const roundNames = ['formation', 'attackers', 'midfielders', 'outsidebacks', 'centrebacksgk'];
+const roundNames = ['Formation', 'Attackers', 'Midfielders', 'Outside Backs', 'Centerbacks & GK'];
 
 // Initialize the current round index
 let currentRoundIndex = 0;
@@ -48,7 +50,7 @@ async function startRound(players) {
     for (const player of Object.values(players)) {
         const embed = new EmbedBuilder()
             .setTitle('Squad Builder Showdown')
-            .setDescription(`Welcome to round ${currentRound}, ${player.user.tag}! Please provide your guess.`)
+            .setDescription(`Welcome to the ${currentRound} round, ${player.user.tag}! Please provide your guess.`)
             .setColor('#0099ff');
 
         const dmChannel = await player.user.createDM();
@@ -56,7 +58,7 @@ async function startRound(players) {
     }
 }
 
-async function nextRound(players) {
+async function nextRound(players, reaction) {
     currentRoundIndex++;
     for (const player of Object.values(players)) {
         player.locked = false;
@@ -67,6 +69,16 @@ async function nextRound(players) {
     if (currentRoundIndex >= roundNames.length) {
         // All rounds are done
         console.log('Game is over');
+
+        const embed = new EmbedBuilder()
+            .setTitle('Squad Builder Showdown')
+            .setDescription('Game Over!\n\n Thanks for playing!')
+            .setColor('#0099ff');
+
+        reaction.message.edit({ embeds: [embed] });
+        reaction.message.reactions.removeAll();
+
+
 
     } else {
         currentRound = roundNames[currentRoundIndex];
@@ -114,8 +126,6 @@ client.on('messageCreate', async (message) => {
 });
 
 client.on('messageReactionAdd', async (reaction, user) => {
-    let p1Guess = {};
-    let p2Guess = {};
     if (reaction.emoji.name === '✅' && user.bot === false && players.player1.user !== user && !players.player2.user) {
         // Set the first person who reacts as Player 2
         players.player2.user = user;
@@ -174,7 +184,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
 
         // Find the '1️⃣' and remove all reactions from the embed
         const emoji = '1️⃣';
-        p1Guess = await reaction.message.channel.send({ embeds: [embed] });
+        players.player1.guessMsg = await reaction.message.channel.send({ embeds: [embed] });
         const reaction1 = reaction.message.reactions.cache.get(emoji);
         await reaction1.remove();
         players.player1.revealed = true;
@@ -188,7 +198,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
 
         // Find the '2️⃣' and remove all reactions from the embed
         const emoji = '2️⃣';
-        p2Guess = await reaction.message.channel.send({ embeds: [embed] });
+        players.player2.guessMsg = await reaction.message.channel.send({ embeds: [embed] });
         const reaction2 = reaction.message.reactions.cache.get(emoji);
         await reaction2.remove();
         players.player2.revealed = true;
@@ -206,11 +216,22 @@ client.on('messageReactionAdd', async (reaction, user) => {
 
     // Change to next round
     if (reaction.emoji.name === '🟢' && user.bot === false && (players.player1.user === user || players.player2.user === user)) {
-        await p1Guess.delete();
-        await p2Guess.delete();
+        // Delete P1 and P2's guess reveal messages
+        await players.player1.guessMsg.delete();
+        await players.player2.guessMsg.delete();
 
-        await nextRound(players);
+        await nextRound(players, reaction);
         await startRound(players);
+
+        reaction.message.reactions.removeAll();
+
+        const embed = new EmbedBuilder()
+            .setTitle('Squad Builder Showdown')
+            .setDescription('DM Showdown with your guesses!')
+            .setColor('#0099ff');
+
+        reaction.message.edit({ embeds: [embed] });
+        await reaction.message.react('🔒');
     }
 });
 
