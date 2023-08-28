@@ -69,7 +69,6 @@ async function nextRound(players, reaction) {
 
     if (currentRoundIndex >= roundNames.length) {
         // All rounds are done
-        console.log('Game is over');
         gameOver = true;
 
         const embed = new EmbedBuilder()
@@ -84,7 +83,6 @@ async function nextRound(players, reaction) {
 
     } else {
         currentRound = roundNames[currentRoundIndex];
-        console.log(`Moving to next round: ${currentRound}`);
     }
 }
 
@@ -99,7 +97,6 @@ function determinePlayer(players, user) {
         return players.player2;
 
     } else {
-        console.log('Error: Not P1 or P2');
         return 'error';
     }
 }
@@ -239,14 +236,11 @@ client.on('messageReactionAdd', async (reaction, user) => {
 client.on('messageCreate', async (message) => {
     if (!message.guild && (message.author === players.player1.user || message.author === players.player2.user)) {
         const content = message.content;
-        // console.log(`Content: ${message.content}`);
-
         const player = determinePlayer(players, message.author);
-        // console.log(`Determined player: ${player.user}`);
 
         // Check if it's the formation round
         if (currentRound === 'formation') {
-            // Formation round: Check if the content is valid (numbers separated by '-')
+            // Formation round: Check if the content is valid)
             const isValidFormation = /^[0-9]+(-[0-9]+| [0-9]+)*$/.test(content);
             if (!isValidFormation) {
                 player.user.send('Invalid guess format. Please provide numbers separated by "-".');
