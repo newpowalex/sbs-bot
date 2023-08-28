@@ -44,6 +44,7 @@ const roundNames = ['Formation', 'Attackers', 'Midfielders', 'Outside Backs', 'C
 
 // Initialize the current round index
 let currentRoundIndex = 0;
+let gameOver = false;
 
 async function startRound(players) {
     // Send DMs to both players with welcome message and current round info
@@ -69,6 +70,7 @@ async function nextRound(players, reaction) {
     if (currentRoundIndex >= roundNames.length) {
         // All rounds are done
         console.log('Game is over');
+        gameOver = true;
 
         const embed = new EmbedBuilder()
             .setTitle('Squad Builder Showdown')
@@ -112,7 +114,6 @@ client.on('messageCreate', async (message) => {
 
         // Set the first player as Player 1
         players.player1.user = message.author;
-        console.log(`Player tag and id: ${players.player1.user.tag}, ${players.player1.user.id}`)
 
         // Send an embedded message in the chat
         const embed = new EmbedBuilder()
@@ -129,7 +130,6 @@ client.on('messageReactionAdd', async (reaction, user) => {
     if (reaction.emoji.name === '✅' && user.bot === false && players.player1.user !== user && !players.player2.user) {
         // Set the first person who reacts as Player 2
         players.player2.user = user;
-        console.log(`Player tag and id: ${players.player2.user.tag}, ${players.player2.user.id}`)
 
         // Remove reactions from the message
         reaction.message.reactions.removeAll();
@@ -150,9 +150,6 @@ client.on('messageReactionAdd', async (reaction, user) => {
 
     if (reaction.emoji.name === '🔒' && user.bot === false && (players.player1.user === user || players.player2.user === user)) {
         const player = determinePlayer(players, user);
-        // console.log(`Determined player: ${player.user}`);
-        console.log('Someone reacted with a lock');
-        console.log(`${player.user.tag}, Locked? = ${player.locked} `);
 
         if (player.locked === false) {
             player.locked = true;
@@ -221,17 +218,21 @@ client.on('messageReactionAdd', async (reaction, user) => {
         await players.player2.guessMsg.delete();
 
         await nextRound(players, reaction);
-        await startRound(players);
+        if (currentRoundIndex < roundNames.length) {
+            await startRound(players);
+        }
 
         reaction.message.reactions.removeAll();
 
-        const embed = new EmbedBuilder()
-            .setTitle('Squad Builder Showdown')
-            .setDescription('DM Showdown with your guesses!')
-            .setColor('#0099ff');
+        if (gameOver === false) {
+            const embed = new EmbedBuilder()
+                .setTitle('Squad Builder Showdown')
+                .setDescription('DM Showdown with your guesses!')
+                .setColor('#0099ff');
 
-        reaction.message.edit({ embeds: [embed] });
-        await reaction.message.react('🔒');
+            reaction.message.edit({ embeds: [embed] });
+            await reaction.message.react('🔒');
+        }
     }
 });
 
@@ -261,10 +262,8 @@ client.on('messageCreate', async (message) => {
         }
 
         // Save the guess to temp
-        console.log(`Temp: ${player.temp}`);
         player.temp = [];
         player.temp.push(content);
-        console.log(`Guess: ${player.temp}`);
     }
 });
 
