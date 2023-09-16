@@ -37,14 +37,14 @@ let players = {
         centrebacksgk: []
     }
 };
-let currentRound = 'Formation';
 
 // Define an array of round names
 const roundNames = ['Formation', 'Attackers', 'Midfielders', 'Outside Backs', 'Centerbacks & GK'];
 
-// Initialize the current round index
+// Initialize the current round index, game over indicator, and current round name
 let currentRoundIndex = 0;
 let gameOver = false;
+let currentRound = 'Formation';
 
 async function startRound(players) {
     // Send DMs to both players with welcome message and current round info
@@ -78,8 +78,6 @@ async function nextRound(players, reaction) {
 
         reaction.message.edit({ embeds: [embed] });
         reaction.message.reactions.removeAll();
-
-
 
     } else {
         currentRound = roundNames[currentRoundIndex];
