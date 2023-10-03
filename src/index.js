@@ -1,5 +1,8 @@
 require('dotenv').config();
 const { Client, IntentsBitField, MessageEmbed, EmbedBuilder } = require('discord.js');
+const { init: initDB, close: closeDB, addGame, addGuess, addUser } = require('./db.js');
+const { startRound, nextRound, determinePlayer, players } = require('./game.js');
+const { v4: uuidv4 } = require('uuid');
 const client = new Client({
     intents: [
         IntentsBitField.Flags.Guilds,
@@ -11,93 +14,9 @@ const client = new Client({
     ]
 });
 
-let players = {
-    player1: {
-        user: undefined,
-        locked: false,
-        revealed: false,
-        temp: [],
-        guessMsg: undefined,
-        formation: [],
-        attackers: [],
-        midfielders: [],
-        outsidebacks: [],
-        centrebacksgk: []
-    },
-    player2: {
-        user: undefined,
-        locked: false,
-        revealed: false,
-        temp: [],
-        guessMsg: undefined,
-        formation: [],
-        attackers: [],
-        midfielders: [],
-        outsidebacks: [],
-        centrebacksgk: []
-    }
-};
+//Initialize database
+initDB();
 
-// Define an array of round names
-const roundNames = ['Formation', 'Attackers', 'Midfielders', 'Outside Backs', 'Centerbacks & GK'];
-
-// Initialize the current round index, game over indicator, and current round name
-let currentRoundIndex = 0;
-let gameOver = false;
-let currentRound = 'Formation';
-
-async function startRound(players) {
-    // Send DMs to both players with welcome message and current round info
-    for (const player of Object.values(players)) {
-        const embed = new EmbedBuilder()
-            .setTitle('Squad Builder Showdown')
-            .setDescription(`Welcome to the ${currentRound} round, ${player.user.tag}! Please provide your guess.`)
-            .setColor('#0099ff');
-
-        const dmChannel = await player.user.createDM();
-        await dmChannel.send({ embeds: [embed] });
-    }
-}
-
-async function nextRound(players, reaction) {
-    currentRoundIndex++;
-    for (const player of Object.values(players)) {
-        player.locked = false;
-        player.revealed = false;
-        player.temp = [];
-    }
-
-    if (currentRoundIndex >= roundNames.length) {
-        // All rounds are done
-        gameOver = true;
-
-        const embed = new EmbedBuilder()
-            .setTitle('Squad Builder Showdown')
-            .setDescription('Game Over!\n\n Thanks for playing!')
-            .setColor('#0099ff');
-
-        reaction.message.edit({ embeds: [embed] });
-        reaction.message.reactions.removeAll();
-
-    } else {
-        currentRound = roundNames[currentRoundIndex];
-    }
-}
-
-function determinePlayer(players, user) {
-    const isPlayer1 = (user.id === players.player1.user.id);
-    const isPlayer2 = (user.id === players.player2.user.id);
-
-    if (isPlayer1 === true) {
-        return players.player1;
-
-    } else if (isPlayer2 === true) {
-        return players.player2;
-
-    } else {
-        return 'error';
-    }
-}
 
 client.on('messageCreate', async (message) => {
     if (message.content === '!sbs') {
@@ -107,8 +26,15 @@ client.on('messageCreate', async (message) => {
             return;
         }
 
+        // Generate a unique game ID
+        const gameID = uuidv4();
+        console.log('Generated game ID:', gameID);
+
         // Set the first player as Player 1
         players.player1.user = message.author;
+
+        //Add player 1 to the user table
+        addUser(players.player1.user.id, players.player1.user.username);
 
         // Send an embedded message in the chat
         const embed = new EmbedBuilder()
@@ -125,6 +51,12 @@ client.on('messageReactionAdd', async (reaction, user) => {
     if (reaction.emoji.name === '✅' && user.bot === false && players.player1.user !== user && !players.player2.user) {
         // Set the first person who reacts as Player 2
         players.player2.user = user;
+
+        //Add player 2 to the user table
+        addUser(players.player2.user.id, players.player2.user.username);
+
+        //Add game to the game table
+        addGame(players.player1.user.id, players.player2.user.id);
 
         // Remove reactions from the message
         reaction.message.reactions.removeAll();
@@ -256,7 +188,23 @@ client.on('messageCreate', async (message) => {
         // Save the guess to temp
         player.temp = [];
         player.temp.push(content);
+
+        //Add the guess to the database
+        addGuess(gameID, player.user.id, currentRound, content);
     }
+});
+
+// Gracefully shut down the database connection when the bot is manually stopped 
+process.on('SIGINT', async () => {
+    console.log('Received SIGINT signal. Closing database connection...');
+    await closeDB();
+    process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+    console.log('Received SIGTERM signal. Closing database connection...');
+    await closeDB();
+    process.exit(0);
 });
 
 client.login(process.env.TOKEN);
