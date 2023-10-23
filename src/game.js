@@ -1,9 +1,9 @@
 const { EmbedBuilder } = require('discord.js');
-const {close: closeDB } = require('./db.js');
 
 let players = {
     player1: {
         user: undefined,
+        dbId: undefined,
         locked: false,
         revealed: false,
         temp: [],
@@ -16,6 +16,7 @@ let players = {
     },
     player2: {
         user: undefined,
+        dbId: undefined,
         locked: false,
         revealed: false,
         temp: [],
@@ -28,39 +29,47 @@ let players = {
     }
 };
 
-// Define an array of round names
-const roundNames = ['Formation', 'Attackers', 'Midfielders', 'Outside Backs', 'Centerbacks & GK'];
-
-// Initialize the current round index, game over indicator, and current round name
-let currentRoundIndex = 0;
-let gameOver = false;
-let currentRound = 'Formation';
+let game = {
+    id: undefined,
+    currentRound: 'Formation',
+    currentRoundIndex: 0,
+    gameOver: false,
+    roundNames: ['Formation', 'Attackers']
+    // roundNames: ['Formation', 'Attackers', 'Midfielders', 'Outside Backs', 'Centerbacks & GK']
+}
 
 async function startRound(players) {
     // Send DMs to both players with welcome message and current round info
-    for (const player of Object.values(players)) {
-        const embed = new EmbedBuilder()
-            .setTitle('Squad Builder Showdown')
-            .setDescription(`Welcome to the ${currentRound} round, ${player.user.tag}! Please provide your guess.`)
-            .setColor('#0099ff');
+    if (game.gameOver !== true) {
+        for (const player of Object.values(players)) {
+            const embed = new EmbedBuilder()
+                .setTitle('Squad Builder Showdown')
+                .setDescription(`Welcome to the ${game.currentRound} round, ${player.user.tag}! Please provide your guess.`)
+                .setColor('#0099ff');
 
-        const dmChannel = await player.user.createDM();
-        await dmChannel.send({ embeds: [embed] });
+            const dmChannel = await player.user.createDM();
+            await dmChannel.send({ embeds: [embed] });
+        }
     }
 }
 
+async function checkGameOver() {
+    if (game.currentRoundIndex >= game.roundNames.length - 1) {
+        // All rounds are done
+        game.gameOver = true;
+    }
+    return game.gameOver;
+}
+
 async function nextRound(players, reaction) {
-    currentRoundIndex++;
+    game.currentRoundIndex++;
     for (const player of Object.values(players)) {
         player.locked = false;
         player.revealed = false;
         player.temp = [];
     }
 
-    if (currentRoundIndex >= roundNames.length) {
-        // All rounds are done
-        gameOver = true;
-
+    if (game.gameOver === true) {
         const embed = new EmbedBuilder()
             .setTitle('Squad Builder Showdown')
             .setDescription('Game Over!\n\n Thanks for playing!')
@@ -70,7 +79,10 @@ async function nextRound(players, reaction) {
         reaction.message.reactions.removeAll();
 
     } else {
-        currentRound = roundNames[currentRoundIndex];
+        game.currentRound = game.roundNames[game.currentRoundIndex];
+        startRound(players);
+
+        return game.currentRound;
     }
 }
 
@@ -90,4 +102,4 @@ function determinePlayer(players, user) {
 }
 
 // Export the game-related functions and the players object
-module.exports = { startRound, nextRound, determinePlayer, players };
+module.exports = { checkGameOver, startRound, nextRound, determinePlayer, players, game };
