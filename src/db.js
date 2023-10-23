@@ -100,26 +100,30 @@ function createGuessesTable() {
     });
 }
 
-// Add a new user to the USERS table
-function addUser(discordId, username) {
+// Add a new user to the USERS table and return their id
+function addUser(discordId, username, callback) {
     const query = 'INSERT INTO USERS (discord_id, username) VALUES (?, ?)';
-    db.run(query, [discordId, username], (err) => {
+    db.run(query, [discordId, username], function (err) {
         if (err) {
             console.error(err.message);
         } else {
-            console.log(`New user added: Discord ID ${discordId}, Username ${username}`);
+            const userId = this.lastID; // Get the id of the newly created user
+            console.log(`New user added: Discord ID ${discordId}, Username ${username}, User ID ${userId}`);
+            callback(userId); // Call the provided callback with the user id
         }
     });
 }
 
-// Add a new game to the GAMES table
-function addGame(player1Id, player2Id) {
+// Add a new game to the GAMES table and return its id
+function addGame(player1Id, player2Id, callback) {
     const query = 'INSERT INTO GAMES (player1_id, player2_id) VALUES (?, ?)';
-    db.run(query, [player1Id, player2Id], (err) => {
+    db.run(query, [player1Id, player2Id], function (err) {
         if (err) {
             console.error(err.message);
         } else {
-            console.log(`New game added: Player 1 ID ${player1Id}, Player 2 ID ${player2Id}`);
+            const gameIdentifier = this.lastID; // Get the id of the newly created game
+            console.log(`New game added: Player 1 ID ${player1Id}, Player 2 ID ${player2Id}, Game ID ${gameIdentifier}`);
+            callback(gameIdentifier); // Call the provided callback with the game identifier
         }
     });
 }
