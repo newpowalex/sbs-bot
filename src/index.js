@@ -177,11 +177,11 @@ client.on('messageCreate', async (message) => {
         const player = determinePlayer(players, message.author);
 
         // Check if it's the formation round
-        if (game.currentRound === 'formation') {
+        if (game.currentRound === 'Formation') {
             // Formation round: Check if the content is valid)
             const isValidFormation = /^[0-9]+(-[0-9]+| [0-9]+)*$/.test(content);
             if (!isValidFormation) {
-                player.user.send('Invalid guess format. Please provide numbers separated by "-".');
+                player.user.send('Invalid guess format. Please provide only numbers.');
                 return;
             }
         } else {
