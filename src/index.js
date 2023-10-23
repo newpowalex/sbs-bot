@@ -92,6 +92,9 @@ client.on('messageReactionAdd', async (reaction, user) => {
             player.locked = true;
             player[game.currentRound] = player.temp;
             player.user.send(`Guess of ${player[game.currentRound]} for ${game.currentRound} saved.`);
+
+            //Add the guess to the database
+            addGuess(game.id, player.dbId, game.currentRound, player[game.currentRound]);
         }
 
         if (p1.locked === true && p2.locked === true) {
@@ -196,9 +199,6 @@ client.on('messageCreate', async (message) => {
         // Save the guess to temp
         player.temp = [];
         player.temp.push(content);
-
-        //Add the guess to the database
-        addGuess(game.id, player.dbId, game.currentRound, content);
     }
 });
 
