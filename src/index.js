@@ -141,7 +141,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
     if (p1.revealed === true && p2.revealed === true) {
         const embed = new EmbedBuilder()
             .setTitle('Squad Builder Showdown')
-            .setDescription(`Both players revealed!\n\n React with 🟢 to move onto next round.`)
+            .setDescription(`Both players revealed!\n\n React with 🟢 to continue.`)
             .setColor('#0099ff');
 
         reaction.message.edit({ embeds: [embed] });
