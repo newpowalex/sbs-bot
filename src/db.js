@@ -108,7 +108,7 @@ function addUser(discordId, username, callback) {
             console.error(err.message);
         } else {
             const userId = this.lastID; // Get the id of the newly created user
-            console.log(`New user added: Discord ID ${discordId}, Username ${username}, User ID ${userId}`);
+            console.log(`New user added, Discord ID: ${discordId}, Username: ${username}, User ID: ${userId}`);
             callback(userId); // Call the provided callback with the user id
         }
     });
@@ -122,7 +122,7 @@ function addGame(player1Id, player2Id, callback) {
             console.error(err.message);
         } else {
             const gameIdentifier = this.lastID; // Get the id of the newly created game
-            console.log(`New game added: Player 1 ID ${player1Id}, Player 2 ID ${player2Id}, Game ID ${gameIdentifier}`);
+            console.log(`New game added, Player 1 ID: ${player1Id}, Player 2 ID: ${player2Id}, Game ID: ${gameIdentifier}`);
             callback(gameIdentifier); // Call the provided callback with the game identifier
         }
     });
@@ -135,10 +135,29 @@ function addGuess(gameId, playerId, roundName, guessText) {
         if (err) {
             console.error(err.message);
         } else {
-            console.log(`New guess added: Game ID ${gameId}, Player ID ${playerId}, Round Name ${roundName}, Guess Text ${guessText}`);
+            console.log(`New guess added, Game ID: ${gameId}, Player ID: ${playerId}, Round Name: ${roundName}, Guess Text: ${guessText}`);
+        }
+    });
+}
+
+// Check if a user with a given Discord ID exists
+function getUserByDiscordId(discordId, callback) {
+    const query = 'SELECT id FROM USERS WHERE discord_id = ?';
+    db.get(query, [discordId], (err, row) => {
+        if (err) {
+            console.error(err.message);
+            callback(err, null);
+        } else {
+            if (row) {
+                // User with the given Discord ID exists, return their user ID
+                callback(null, row.id);
+            } else {
+                // User with the given Discord ID doesn't exist, return null
+                callback(null, null);
+            }
         }
     });
 }
 
 // Export the database-related functions
-module.exports = { init, close, addGame, addGuess, addUser };
+module.exports = { init, close, addGame, addGuess, addUser, getUserByDiscordId };
