@@ -1,6 +1,6 @@
 require('dotenv').config();
 const { Client, IntentsBitField, MessageEmbed, EmbedBuilder } = require('discord.js');
-const { init: initDB, close: closeDB, addGame, addGuess, addUser } = require('./db.js');
+const { init: initDB, close: closeDB, addGame, addGuess, addUser, getUserByDiscordId: getUser } = require('./db.js');
 const { checkGameOver, startRound, nextRound, determinePlayer, players, game } = require('./game.js');
 const client = new Client({
     intents: [
@@ -31,11 +31,23 @@ client.on('messageCreate', async (message) => {
         // Set the first player as Player 1
         p1.user = message.author;
 
-        //Add player 1 to the user table
-        addUser(p1.user.id, p1.user.username, (userId) => {
-            console.log(`New user created with ID: ${userId}`);
-
-            p1.dbId = userId;
+        // Check if the user already exists in the USERS table
+        getUser(p1.user.id, (err, userId) => {
+            if (err) {
+                console.log('Error fetching P1 Discord ID')
+                return;
+            }
+            if (userId) {
+                // User already exists, use the existing user ID
+                console.log(`Existing user ID fetched: ${userId}`);
+                p1.dbId = userId;
+            } else {
+                // User doesn't exist, add the user and get the assigned user ID
+                addUser(p1.user.id, p1.user.username, (userId) => {
+                    console.log(`New user created with ID: ${userId}`);
+                    p1.dbId = userId;
+                });
+            }
         });
 
         // Send an embedded message in the chat
@@ -54,11 +66,23 @@ client.on('messageReactionAdd', async (reaction, user) => {
         // Set the first person who reacts as Player 2
         p2.user = user;
 
-        //Add player 2 to the user table
-        addUser(p2.user.id, p2.user.username, (userId) => {
-            console.log(`New user created with ID: ${userId}`);
-
-            p2.dbId = userId;
+        // Check if the user already exists in the USERS table
+        getUser(p2.user.id, (err, userId) => {
+            if (err) {
+                console.log('Error fetching P2 Discord ID')
+                return;
+            }
+            if (userId) {
+                // User already exists, use the existing user ID
+                console.log(`Existing user ID fetched: ${userId}`);
+                p2.dbId = userId;
+            } else {
+                // User doesn't exist, add the user and get the assigned user ID
+                addUser(p2.user.id, p2.user.username, (userId) => {
+                    console.log(`New user created with ID: ${userId}`);
+                    p2.dbId = userId;
+                });
+            }
         });
 
         // Remove reactions from the message
@@ -66,8 +90,6 @@ client.on('messageReactionAdd', async (reaction, user) => {
 
         //Add game to the game table
         addGame(p1.dbId, p2.dbId, (gameId) => {
-            console.log(`New game created with ID: ${gameId}`);
-
             game.id = gameId;
         });
 
