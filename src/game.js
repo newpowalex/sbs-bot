@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, ChannelType } = require('discord.js');
 
 let players = {
     player1: {
@@ -86,6 +86,27 @@ async function nextRound(players, reaction) {
     }
 }
 
+async function createThread(player, channel) {
+    if (!channel) {
+        return console.log('Channel not found.');
+    }
+
+    // Create a private thread
+    const thread = await channel.threads.create({
+        name: `${player.user.username}'s Guess Thread`, // Thread name
+        autoArchiveDuration: 60, // Auto-archive duration in minutes
+        type: ChannelType.PrivateThread,
+        reason: `Private Thread for ${player.user.username} to send their guesses`,
+    });
+
+    console.log(`Created thread: ${thread.name}`);
+
+    // Invite player to the private thread
+    await thread.members.add(message.author.id);
+
+    console.log(`Invited user ${message.author.username} to the thread: ${thread.name}`);
+}
+
 function determinePlayer(players, user) {
     const isPlayer1 = (user.id === players.player1.user.id);
     const isPlayer2 = (user.id === players.player2.user.id);
@@ -102,4 +123,4 @@ function determinePlayer(players, user) {
 }
 
 // Export the game-related functions and the players object
-module.exports = { checkGameOver, startRound, nextRound, determinePlayer, players, game };
+module.exports = { checkGameOver, startRound, nextRound, determinePlayer, createThread, players, game };
