@@ -28,8 +28,11 @@ client.on('messageCreate', async (message) => {
             return;
         }
 
-        // Set the first player as Player 1
+        // Set the first player as Player 1 and create a thread for them to guess
         p1.user = message.author;
+
+        const channel = message.channel;
+        createThread(p1, channel);
 
         // Check if the user already exists in the USERS table
         getUser(p1.user.id, (err, userId) => {
@@ -223,6 +226,22 @@ client.on('messageCreate', async (message) => {
         player.temp.push(content);
     }
 });
+
+client.on('threadCreate', async (thread) => {
+    // Listen for all messages in the private thread
+    const collector = thread.createMessageCollector({ time: 30000 }); // Set a time limit of 30 seconds
+
+    collector.on('collect', async (msg) => {
+        console.log(`Received message: ${msg.content}`);
+        // Process or handle the received messages here
+    });
+
+    collector.on('end', (collected, reason) => {
+        if (reason === 'time') {
+            console.log('Collector ended due to time limit.');
+        }
+    });
+})
 
 // Gracefully shut down the database connection when the bot is manually stopped 
 process.on('SIGINT', async () => {
