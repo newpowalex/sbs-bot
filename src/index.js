@@ -1,7 +1,7 @@
 require('dotenv').config();
-const { Client, IntentsBitField, MessageEmbed, EmbedBuilder } = require('discord.js');
+const { Client, IntentsBitField, MessageEmbed, EmbedBuilder, ThreadChannel, ChannelType } = require('discord.js');
 const { init: initDB, close: closeDB, addGame, addGuess, addUser, getUserByDiscordId: getUser } = require('./db.js');
-const { checkGameOver, startRound, nextRound, determinePlayer, players, game } = require('./game.js');
+const { checkGameOver, startRound, nextRound, determinePlayer, createThread, players, game } = require('./game.js');
 const client = new Client({
     intents: [
         IntentsBitField.Flags.Guilds,
@@ -32,7 +32,7 @@ client.on('messageCreate', async (message) => {
         p1.user = message.author;
 
         const channel = message.channel;
-        createThread(p1, channel);
+        p1.thread = createThread(p1, channel);
 
         // Check if the user already exists in the USERS table
         getUser(p1.user.id, (err, userId) => {
@@ -68,6 +68,9 @@ client.on('messageReactionAdd', async (reaction, user) => {
     if (reaction.emoji.name === '✅' && user.bot === false && p1.user !== user && !p2.user) {
         // Set the first person who reacts as Player 2
         p2.user = user;
+
+        const channel = reaction.channel;
+        p2.thread = createThread(p2, channel);
 
         // Check if the user already exists in the USERS table
         getUser(p2.user.id, (err, userId) => {
@@ -199,10 +202,11 @@ client.on('messageReactionAdd', async (reaction, user) => {
     }
 });
 
+
 client.on('messageCreate', async (message) => {
-    if (!message.guild && (message.author === p1.user || message.author === p2.user)) {
+    if (message.channel.type === ChannelType.PrivateThread && (message.author === p1.user || message.author === p2.user)) {
         const content = message.content;
-        const player = determinePlayer(players, message.author);
+        const player = determinePlayer(players, message.channelId);
 
         // Check if it's the formation round
         if (game.currentRound === 'Formation') {
@@ -227,21 +231,21 @@ client.on('messageCreate', async (message) => {
     }
 });
 
-client.on('threadCreate', async (thread) => {
-    // Listen for all messages in the private thread
-    const collector = thread.createMessageCollector({ time: 30000 }); // Set a time limit of 30 seconds
+// client.on('threadCreate', async (thread) => {
+//     // Listen for all messages in the private thread
+//     const collector = thread.createMessageCollector({ time: 30000 }); // Set a time limit of 30 seconds
 
-    collector.on('collect', async (msg) => {
-        console.log(`Received message: ${msg.content}`);
-        // Process or handle the received messages here
-    });
+//     collector.on('collect', async (msg) => {
+//         console.log(`Received message: ${msg.content}`);
+//         // Process or handle the received messages here
+//     });
 
-    collector.on('end', (collected, reason) => {
-        if (reason === 'time') {
-            console.log('Collector ended due to time limit.');
-        }
-    });
-})
+//     collector.on('end', (collected, reason) => {
+//         if (reason === 'time') {
+//             console.log('Collector ended due to time limit.');
+//         }
+//     });
+// })
 
 // Gracefully shut down the database connection when the bot is manually stopped 
 process.on('SIGINT', async () => {

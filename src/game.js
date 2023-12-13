@@ -4,6 +4,7 @@ let players = {
     player1: {
         user: undefined,
         dbId: undefined,
+        thread: undefined,
         locked: false,
         revealed: false,
         temp: [],
@@ -17,6 +18,7 @@ let players = {
     player2: {
         user: undefined,
         dbId: undefined,
+        thread: undefined,
         locked: false,
         revealed: false,
         temp: [],
@@ -47,8 +49,8 @@ async function startRound(players) {
                 .setDescription(`Welcome to the ${game.currentRound} round, ${player.user.tag}! Please provide your guess.`)
                 .setColor('#0099ff');
 
-            const dmChannel = await player.user.createDM();
-            await dmChannel.send({ embeds: [embed] });
+            // const dmChannel = await player.user.createDM();
+            // await dmChannel.send({ embeds: [embed] });
         }
     }
 }
@@ -102,14 +104,20 @@ async function createThread(player, channel) {
     console.log(`Created thread: ${thread.name}`);
 
     // Invite player to the private thread
-    await thread.members.add(message.author.id);
+    await thread.members.add(player.user.id);
 
-    console.log(`Invited user ${message.author.username} to the thread: ${thread.name}`);
+    console.log(thread.get('thread-id'));
+
+    console.log(`Invited user ${player.user.username} to the thread: ${thread.name}`);
+
+    return thread;
 }
 
-function determinePlayer(players, user) {
-    const isPlayer1 = (user.id === players.player1.user.id);
-    const isPlayer2 = (user.id === players.player2.user.id);
+async function determinePlayer(players, iD) {
+    const isPlayer1 = (iD === players.player1.thread.channelId);
+    console.log(iD);
+    const isPlayer2 = (iD === players.player2.thread.channelId);
+    console.log(players.player2.thread.channelId);
 
     if (isPlayer1 === true) {
         return players.player1;
