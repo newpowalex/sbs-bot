@@ -34,8 +34,8 @@ let game = {
     currentRound: 'Formation',
     currentRoundIndex: 0,
     gameOver: false,
-    roundNames: ['Formation', 'Attackers']
-    // roundNames: ['Formation', 'Attackers', 'Midfielders', 'Outside Backs', 'Centerbacks & GK']
+    // roundNames: ['Formation', 'Attackers']
+    roundNames: ['Formation', 'Attackers', 'Midfielders', 'Outside Backs', 'Centerbacks & GK']
 }
 
 async function startRound(players) {
